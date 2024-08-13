@@ -1,6 +1,17 @@
 [package]
 name = "gitup"
 version = "0.1.0"
+authors = ["Lucian <neuraluc@gmail.com>"]
 edition = "2021"
 
-[dependencies]
+description = "Gitup is a Rust CLI tool for checking, installing, and configuring Git on your system."
+
+license = "MIT"
+
+readme = "README.md"
+
+homepage = "https://github.com/gni/gitup"
+repository = "https://github.com/gni/gitup"
+
+categories = ["command-line-utilities", "development-tools::command-line"]
+keywords = ["git", "cli", "setup"]
