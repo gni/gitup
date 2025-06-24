@@ -1,81 +1,170 @@
-# Gitup
+# Gitup 🚀
 
-Gitup is a simple Rust CLI tool designed to help you set up and configure Git on your system. This tool checks if Git is installed, installs it if necessary, and configures your Git user name and email.
+**Manage your Git identity across multiple accounts and projects.**
 
-## Features
+[![Crates.io](https://img.shields.io/crates/v/gitup.svg)](https://crates.io/crates/gitup)
 
-- **Check Git Installation:** Gitup checks if Git is installed on your system.
-- **Install Git:** If Git is not installed, Gitup will prompt you to install it (for Debian/Ubuntu systems).
-- **Configure Git:** Gitup allows you to set your Git user name and email globally.
-- **JSON Output:** Gitup supports JSON output for easy integration with other tools or scripts.
+`gitup` is cross-platform CLI tool designed to check, install, and manage your Git configurations with ease. The **profile management**, allows to switch between work, personal, and other Git accounts with a single command.
+
+
+## Table of Contents
+
+- [Key Features](#key-features)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Initial Setup](#initial-setup)
+  - [Checking Configuration](#checking-configuration)
+  - [Profile Management](#profile-management)
+  - [Non-Interactive Configuration](#non-interactive-configuration)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Key Features
+
+- **Git Installation Check**: Verifies if Git is installed on your system.
+- **Cross-Platform Guidance**: If Git is not installed, `gitup` provides the correct installation command for your OS (supports Debian/Ubuntu, Fedora/RHEL, Arch Linux, macOS, and Windows).
+- **Interactive Setup**: A guided `gitup setup` command for new users that also offers to save the configuration as a profile.
+- **Effortless Profile Management**: Save multiple Git configurations (e.g., for 'work' and 'personal' use) and switch between them seamlessly.
+- **Interactive Switching**: Simply run `gitup use` to get an interactive list of profiles to choose from.
+- **Script-Friendly**: A global `--json` flag provides machine-readable output for all commands, and configuration can be set via environment variables.
+- **Secure by Design**: Does not require or execute commands with `sudo` itself; it empowers the user to run provided installation commands securely.
 
 ## Installation
 
-To build Gitup, you'll need to have Rust installed on your system.
+You will need the Rust toolchain (version 1.65 or newer) installed.
 
-1. Clone the repository or create a new Rust project.
-2. Navigate to the project directory.
-3. Build the project using the command:
-   ```
-   cargo build --release
-   ```
-   This will create an optimized binary in the `target/release/` directory.
+1.  **Install from Crates.io (Recommended):**
+    ```sh
+    cargo install gitup
+    ```
+
+2.  **Build from Source:**
+    ```sh
+    # Clone the repository
+    git clone [https://github.com/gni/gitup.git](https://github.com/gni/gitup.git)
+    cd gitup
+
+    # Build the release binary
+    cargo build --release
+
+    # The executable will be at `target/release/gitup`
+    # Consider moving it to a directory in your PATH
+    mv target/release/gitup /usr/local/bin/
+    ```
 
 ## Usage
 
-You can run the Gitup tool with various options:
+### Initial Setup
 
-1. **Basic Usage:**
-   ```
-   ./target/release/gitup
-   ```
-   This command will check if Git is installed and, if not, prompt you to install it. It will then ask you to configure Git with your name and email.
+For first-time use, the `setup` command is the best starting point. It will guide you through setting your name and email and then ask if you want to save it as your first profile.
 
-2. **Provide Git User Information via Command-Line Arguments:**
-   ```
-   ./target/release/gitup --user "Your Name" --email "your.email@example.com"
-   ```
-   This command allows you to specify your Git user name and email directly via the command line.
+```sh
+gitup setup
+````
 
-3. **JSON Output:**
-   ```
-   ./target/release/gitup --json
-   ```
-   Use this option to get the current Git configuration in JSON format.
+### Checking Configuration
 
-## Example
+To see your current global `user.name`/`user.email` and the active `gitup` profile.
 
-1. **Running with Prompts:**
-   ```
-   ./target/release/gitup
-   ```
-   - If Git is not installed, Gitup will prompt you to install it.
-   - After installation, it will ask for your Git user name and email.
+```sh
+gitup check
+```
 
-2. **Running with Arguments:**
-   ```
-   ./target/release/gitup --user "Jane Doe" --email "jane.doe@example.com"
-   ```
-   - Gitup will configure Git with the provided user name and email.
+*Alias: `gitup status`*
 
-3. **Getting JSON Output:**
-   ```
-   ./target/release/gitup --json
-   ```
-   - Gitup will output the current Git user name and email in JSON format.
+### Profile Management
 
-## OS
-Debian
+This is the core feature for managing multiple Git identities.
 
-## Todo
-Archlinux
-Almalinux/RockyLinux
-Windows
-Mac
+#### Switch Profiles (Easy Switch)
 
-## Contributing
+Run `use` without a name to get an interactive selector. This is the easiest way to switch contexts.
 
-Feel free to open issues or submit pull requests if you want to contribute to the project.
+```sh
+$ gitup use
+
+? Select a profile to use ›
+  personal
+❯ work
+```
+
+Or switch directly if you know the name:
+
+```sh
+gitup use personal
+```
+
+#### Save a New Profile
+
+This command reads your **current global Git configuration** and saves it as a named profile.
+
+```sh
+# First, ensure your global config is what you want to save
+git config --global user.name "Work User"
+git config --global user.email "work.user@example.com"
+
+# Then, save it
+gitup save work
+```
+
+#### List All Saved Profiles
+
+```sh
+gitup list
+```
+
+*Alias: `gitup ls`*
+
+You will see a list of your profiles, with the active one highlighted.
+
+```
+Saved Profiles
+  - personal
+  - work (active)
+```
+
+#### Show the Active Profile
+
+```sh
+gitup current
+```
+
+*Alias: `gitup active`*
+
+#### Delete a Profile
+
+```sh
+gitup delete work
+```
+
+*Alias: `gitup rm`*
+
+### Non-Interactive Configuration
+
+For use in scripts or CI/CD environments.
+
+```sh
+# Set config using long flags
+gitup set --name "Your Name" --email "your.email@example.com"
+
+# Or with short flags
+gitup set -n "Your Name" -e "your.email@example.com"
+
+# Flags can also be populated from environment variables
+export GITUP_USER_NAME="Your Name"
+export GITUP_USER_EMAIL="your.email@example.com"
+gitup set
+```
+
+## Configuration
+
+`gitup` stores its profile data in a simple JSON file located at:
+
+  - **Linux/macOS:** `$HOME/.config/gitup/config.json`
+  - **Windows:** `{FOLDERID_RoamingAppData}\gitup\config.json`
+
+You can view this file to see all your saved profiles, but it is recommended to manage it through the CLI commands.
 
 ## Author
 Lucian BLETAN
