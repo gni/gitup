@@ -13,7 +13,7 @@ readme = "readme.md"
 homepage = "https://github.com/gni/gitup"
 repository = "https://github.com/gni/gitup"
 
-categories = ["command-line-utilities", "development-tools::command-line"]
+categories = ["command-line-utilities", "development-tools"]
 keywords = ["git", "cli", "setup", "config", "profile"]
 rust-version = "1.87.0"
 
