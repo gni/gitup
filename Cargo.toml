@@ -8,7 +8,7 @@ description = "Gitup is a Rust CLI tool for checking, installing, and configurin
 
 license = "MIT"
 
-readme = "README.md"
+readme = "readme.md"
 
 homepage = "https://github.com/gni/gitup"
 repository = "https://github.com/gni/gitup"
