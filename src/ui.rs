@@ -25,6 +25,20 @@ pub fn prompt_for_input(prompt: &str, default: Option<&str>) -> Result<String, A
         .map_err(|_| AppError::OperationCancelled)
 }
 
+pub fn prompt_for_optional_input(prompt: &str, default: Option<&str>) -> Result<String, AppError> {
+    let theme = ColorfulTheme::default();
+    let mut builder = Input::with_theme(&theme).with_prompt(prompt);
+
+    if let Some(val) = default {
+        builder = builder.default(val.to_string());
+    }
+
+    builder
+        .allow_empty(true)
+        .interact_text()
+        .map_err(|_| AppError::OperationCancelled)
+}
+
 pub fn select_profile(profiles: &[String]) -> Result<String, AppError> {
     if profiles.is_empty() {
         return Err(AppError::ProfileNotFound(
@@ -43,16 +57,25 @@ pub fn select_profile(profiles: &[String]) -> Result<String, AppError> {
 pub fn print_status(config: &GitUserConfig, app_config: Option<&AppConfig>) {
     println!("{}", "Git Configuration Status".bold().underline());
     match &config.name {
-        Some(name) if !name.is_empty() => println!("  {}: {}", "Name".green(), name),
-        _ => println!("  {}: Not Set", "Name".yellow()),
+        Some(name) if !name.is_empty() => println!("  {:<12}: {}", "Name".green(), name),
+        _ => println!("  {:<12}: Not Set", "Name".yellow()),
     }
     match &config.email {
-        Some(email) if !email.is_empty() => println!("  {}: {}", "Email".green(), email),
-        _ => println!("  {}: Not Set", "Email".yellow()),
+        Some(email) if !email.is_empty() => println!("  {:<12}: {}", "Email".green(), email),
+        _ => println!("  {:<12}: Not Set", "Email".yellow()),
+    }
+    match &config.signing_key {
+        Some(key) if !key.is_empty() => println!("  {:<12}: {}", "Signing Key".green(), key),
+        _ => (),
     }
     if let Some(ac) = app_config {
         if let Some(profile) = &ac.current_profile {
-            println!("  {}: {} ({})", "Profile".green(), profile, "active".cyan());
+            println!(
+                "  {:<12}: {} ({})",
+                "Profile".green(),
+                profile,
+                "active".cyan()
+            );
         }
     }
 }

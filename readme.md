@@ -15,6 +15,7 @@
   - [Initial Setup](#initial-setup)
   - [Checking Configuration](#checking-configuration)
   - [Profile Management](#profile-management)
+  - [Shell Completions](#shell-completions)
   - [Non-Interactive Configuration](#non-interactive-configuration)
 - [Configuration](#configuration)
 - [Contributing](#contributing)
@@ -23,16 +24,18 @@
 ## Key Features
 
 - **Git Installation Check**: Verifies if Git is installed on your system.
-- **Cross-Platform Guidance**: If Git is not installed, `gitup` provides the correct installation command for your OS (supports Debian/Ubuntu, Fedora/RHEL, Arch Linux, macOS, and Windows).
-- **Interactive Setup**: A guided `gitup setup` command for new users that also offers to save the configuration as a profile.
-- **Effortless Profile Management**: Save multiple Git configurations (e.g., for 'work' and 'personal' use) and switch between them seamlessly.
+- **Cross-Platform Guidance**: If Git is not installed, `gitup` provides the correct installation command for your OS.
+- **Interactive Setup**: A guided `gitup setup` command for new users that configures name, email, and signing key, then offers to save it all as a profile.
+- **Cryptographic Signing**: Associate GPG/SSH signing keys with your profiles to ensure all commits for that identity are automatically and correctly signed.
+- **Effortless Profile Management**: Save multiple Git configurations and switch between them seamlessly.
 - **Interactive Switching**: Simply run `gitup use` to get an interactive list of profiles to choose from.
-- **Script-Friendly**: A global `--json` flag provides machine-readable output for all commands, and configuration can be set via environment variables.
+- **Shell Completions**: Generate completion scripts for Bash, Zsh, Fish, and other shells for a faster workflow.
+- **Script-Friendly**: A global `--json` flag provides machine-readable output for all commands.
 - **Secure by Design**: Does not require or execute commands with `sudo` itself; it empowers the user to run provided installation commands securely.
 
 ## Installation
 
-You will need the Rust toolchain (version 1.65 or newer) installed.
+You will need the Rust toolchain (version 1.70 or newer) installed.
 
 1.  **Install from Crates.io (Recommended):**
     ```sh
@@ -42,14 +45,14 @@ You will need the Rust toolchain (version 1.65 or newer) installed.
 2.  **Build from Source:**
     ```sh
     # Clone the repository
-    git clone [https://github.com/gni/gitup.git](https://github.com/gni/gitup.git)
+    git clone https://github.com/gni/gitup.git
     cd gitup
 
     # Build the release binary
     cargo build --release
 
     # The executable will be at `target/release/gitup`
-    # Consider moving it to a directory in your PATH
+    # For global access, move it to a directory in your PATH
     mv target/release/gitup /usr/local/bin/
     ```
 
@@ -57,7 +60,7 @@ You will need the Rust toolchain (version 1.65 or newer) installed.
 
 ### Initial Setup
 
-For first-time use, the `setup` command is the best starting point. It will guide you through setting your name and email and then ask if you want to save it as your first profile.
+For first-time use, the `setup` command is the best starting point. It will guide you through setting your name, email, and an optional GPG/SSH signing key. It will then ask if you want to save the result as your first profile.
 
 ```sh
 gitup setup
@@ -65,7 +68,7 @@ gitup setup
 
 ### Checking Configuration
 
-To see your current global `user.name`/`user.email` and the active `gitup` profile.
+To see your current global `user.name`, `user.email`, `user.signingkey`, and the active `gitup` profile.
 
 ```sh
 gitup check
@@ -79,7 +82,7 @@ This is the core feature for managing multiple Git identities.
 
 #### Switch Profiles (Easy Switch)
 
-Run `use` without a name to get an interactive selector. This is the easiest way to switch contexts.
+Run `use` without a name for an interactive selector. This is the easiest way to switch contexts.
 
 ```sh
 $ gitup use
@@ -89,20 +92,15 @@ $ gitup use
 ❯ work
 ```
 
-Or switch directly if you know the name:
-
-```sh
-gitup use personal
-```
+Or switch directly if you know the name: `gitup use personal`
 
 #### Save a New Profile
 
-This command reads your **current global Git configuration** and saves it as a named profile.
+This command reads your **current global Git configuration** (including signing key) and saves it as a named profile.
 
 ```sh
 # First, ensure your global config is what you want to save
-git config --global user.name "Work User"
-git config --global user.email "work.user@example.com"
+gitup set -n "Work User" -e "work.user@example.com" -s "A1B2C3D4"
 
 # Then, save it
 gitup save work
@@ -140,20 +138,52 @@ gitup delete work
 
 *Alias: `gitup rm`*
 
+### Shell Completions
+
+To enable shell completions, you need to generate the script for your shell and source it in your shell's configuration file (e.g., `.bashrc`, `.zshrc`).
+
+#### Bash
+
+Add the following to your `~/.bashrc`:
+
+```sh
+eval "$(gitup completions bash)"
+```
+
+#### Zsh
+
+Add the following to your `~/.zshrc`:
+
+```sh
+eval "$(gitup completions zsh)"
+```
+
+#### Fish
+
+Add the following to your `~/.config/fish/config.fish`:
+
+```sh
+gitup completions fish | source
+```
+
 ### Non-Interactive Configuration
 
 For use in scripts or CI/CD environments.
 
 ```sh
 # Set config using long flags
-gitup set --name "Your Name" --email "your.email@example.com"
+gitup set --name "User" --email "user@example.com" --signing-key "A1B2C3D4"
 
 # Or with short flags
-gitup set -n "Your Name" -e "your.email@example.com"
+gitup set -n "User" -e "user@example.com" -s "A1B2C3D4"
+
+# Unset a signing key by passing an empty string
+gitup set -s ""
 
 # Flags can also be populated from environment variables
-export GITUP_USER_NAME="Your Name"
-export GITUP_USER_EMAIL="your.email@example.com"
+export GITUP_USER_NAME="User"
+export GITUP_USER_EMAIL="user@example.com"
+export GITUP_SIGNING_KEY="A1B2C3D4"
 gitup set
 ```
 
@@ -164,7 +194,15 @@ gitup set
   - **Linux/macOS:** `$HOME/.config/gitup/config.json`
   - **Windows:** `{FOLDERID_RoamingAppData}\gitup\config.json`
 
-You can view this file to see all your saved profiles, but it is recommended to manage it through the CLI commands.
+It is recommended to manage this file through the CLI commands.
+
+## Contributing
+
+Contributions, issues, and feature requests are welcome. Please check the [issues page](https://github.com/gni/gitup/issues) for this project.
+
+## License
+
+This project is licensed under the MIT License.
 
 ## Author
 Lucian BLETAN

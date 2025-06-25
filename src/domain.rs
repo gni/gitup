@@ -8,12 +8,8 @@ pub struct GitUserConfig {
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct Profile {
-    pub name: String,
-    pub config: GitUserConfig,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub signing_key: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default)]

@@ -31,7 +31,12 @@ pub fn save_app_config(config: &AppConfig) -> Result<(), AppError> {
 pub fn get_git_config() -> Result<GitUserConfig, AppError> {
     let name = platform::run_command("git", &["config", "--global", "user.name"]).ok();
     let email = platform::run_command("git", &["config", "--global", "user.email"]).ok();
-    Ok(GitUserConfig { name, email })
+    let signing_key = platform::run_command("git", &["config", "--global", "user.signingkey"]).ok();
+    Ok(GitUserConfig {
+        name,
+        email,
+        signing_key,
+    })
 }
 
 pub fn set_git_config(config: &GitUserConfig) -> Result<(), AppError> {
@@ -41,6 +46,22 @@ pub fn set_git_config(config: &GitUserConfig) -> Result<(), AppError> {
     if let Some(email) = &config.email {
         platform::run_command("git", &["config", "--global", "user.email", email])?;
     }
+
+    match &config.signing_key {
+        Some(key) if !key.is_empty() => {
+            platform::run_command("git", &["config", "--global", "user.signingkey", key])?;
+            platform::run_command("git", &["config", "--global", "commit.gpgsign", "true"])?;
+        }
+        _ => {
+            platform::run_command(
+                "git",
+                &["config", "--global", "--unset-all", "user.signingkey"],
+            )
+            .ok();
+            platform::run_command("git", &["config", "--global", "commit.gpgsign", "false"])?;
+        }
+    }
+
     Ok(())
 }
 

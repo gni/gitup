@@ -1,6 +1,6 @@
 [package]
 name = "gitup"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Lucian <neuraluc@gmail.com>"]
 edition = "2021"
 
@@ -20,6 +20,7 @@ rust-version = "1.87.0"
 [dependencies]
 anyhow = "1.0.98"
 clap = { version = "4.5.40", features = ["derive", "env"] }
+clap_complete = "4.5.54"
 colored = "3.0.0"
 dialoguer = { version = "0.11.0", features = ["fuzzy-select"] }
 serde = { version = "1.0.219", features = ["derive"] }

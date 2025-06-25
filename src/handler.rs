@@ -1,25 +1,31 @@
 use crate::{cli, config, domain, error::AppError, platform, ui};
 use anyhow::{anyhow, Result};
+use clap::CommandFactory;
+use clap_complete::{generate, Shell};
 use colored::*;
+use std::io;
 
 pub fn handle_command(cli: cli::Cli) -> Result<()> {
-    if let cli::Commands::Check = cli.command {
-        return handle_check(&cli);
-    }
-
-    if !platform::is_git_installed() {
-        return handle_git_not_installed(&cli);
-    }
-
     match cli.command {
-        cli::Commands::Setup(args) => handle_setup(args, cli.json),
-        cli::Commands::Set(args) => handle_set(args, cli.json),
-        cli::Commands::Save { name } => handle_save_profile(name, cli.json),
-        cli::Commands::Use { name } => handle_use_profile(name, cli.json),
-        cli::Commands::List => handle_list_profiles(cli.json),
-        cli::Commands::Current => handle_current_profile(cli.json),
-        cli::Commands::Delete { name } => handle_delete_profile(name, cli.json),
-        cli::Commands::Check => unreachable!(),
+        cli::Commands::Check => handle_check(&cli),
+        cli::Commands::Completions { shell } => handle_completions(shell),
+        _ => {
+            if !platform::is_git_installed() {
+                return handle_git_not_installed(&cli);
+            }
+            match cli.command {
+                cli::Commands::Setup(args) => handle_setup(args, cli.json),
+                cli::Commands::Set(args) => handle_set(args, cli.json),
+                cli::Commands::Save { name } => handle_save_profile(name, cli.json),
+                cli::Commands::Use { name } => handle_use_profile(name, cli.json),
+                cli::Commands::List => handle_list_profiles(cli.json),
+                cli::Commands::Current => handle_current_profile(cli.json),
+                cli::Commands::Delete { name, force } => {
+                    handle_delete_profile(name, force, cli.json)
+                }
+                _ => unreachable!(),
+            }
+        }
     }
 }
 
@@ -65,9 +71,19 @@ fn handle_setup(args: cli::SetupArgs, json: bool) -> Result<()> {
 
     let name = ui::prompt_for_input("Enter your Git user name:", current_config.name.as_deref())?;
     let email = ui::prompt_for_input("Enter your Git email:", current_config.email.as_deref())?;
+    let signing_key = ui::prompt_for_optional_input(
+        "Enter your GPG/SSH signing key (optional):",
+        current_config.signing_key.as_deref(),
+    )?;
+
     let new_config = domain::GitUserConfig {
         name: Some(name),
         email: Some(email),
+        signing_key: if signing_key.is_empty() {
+            None
+        } else {
+            Some(signing_key)
+        },
     };
     config::set_git_config(&new_config)?;
 
@@ -112,15 +128,18 @@ fn handle_check(cli: &cli::Cli) -> Result<()> {
 }
 
 fn handle_set(args: cli::ConfigArgs, json: bool) -> Result<()> {
-    let config_to_set = domain::GitUserConfig {
-        name: args.name,
-        email: args.email,
-    };
-    if config_to_set.name.is_none() && config_to_set.email.is_none() {
-        return Err(anyhow!(
-            "Must provide --name (-n) and/or --email (-e) to set."
-        ));
+    let mut config_to_set = config::get_git_config()?;
+
+    if let Some(name) = args.name {
+        config_to_set.name = Some(name);
     }
+    if let Some(email) = args.email {
+        config_to_set.email = Some(email);
+    }
+    if let Some(key) = args.signing_key {
+        config_to_set.signing_key = if key.is_empty() { None } else { Some(key) };
+    }
+
     config::set_git_config(&config_to_set)?;
     let final_config = config::get_git_config()?;
     let app_config = config::load_app_config()?;
@@ -138,7 +157,9 @@ fn handle_save_profile(name: String, json: bool) -> Result<()> {
     if git_config.name.as_deref().unwrap_or("").is_empty()
         || git_config.email.as_deref().unwrap_or("").is_empty()
     {
-        return Err(anyhow!("Current Git config is incomplete. Cannot save profile. Use 'gitup set' or 'gitup setup' first."));
+        return Err(anyhow!(
+            "Current Git config is incomplete (name or email is missing). Cannot save profile."
+        ));
     }
     config::save_profile(&name, &git_config)?;
     if json {
@@ -208,7 +229,16 @@ fn handle_current_profile(json: bool) -> Result<()> {
     Ok(())
 }
 
-fn handle_delete_profile(name: String, json: bool) -> Result<()> {
+fn handle_delete_profile(name: String, force: bool, json: bool) -> Result<()> {
+    if !json && !force {
+        let confirmation_prompt =
+            format!("Are you sure you want to delete the profile '{}'?", name);
+        if !ui::confirm(&confirmation_prompt, false)? {
+            println!("Deletion cancelled.");
+            return Ok(());
+        }
+    }
+
     let mut app_config = config::load_app_config()?;
     if app_config.profiles.remove(&name).is_some() {
         if app_config.current_profile.as_ref() == Some(&name) {
@@ -226,5 +256,12 @@ fn handle_delete_profile(name: String, json: bool) -> Result<()> {
     } else {
         return Err(AppError::ProfileNotFound(name).into());
     }
+    Ok(())
+}
+
+fn handle_completions(shell: Shell) -> Result<()> {
+    let mut cmd = cli::Cli::command();
+    let bin_name = cmd.get_name().to_string();
+    generate(shell, &mut cmd, bin_name, &mut io::stdout());
     Ok(())
 }

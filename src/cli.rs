@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use clap_complete::Shell;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -49,6 +50,15 @@ pub enum Commands {
     Delete {
         #[arg(help = "The name of the profile to delete.")]
         name: String,
+
+        #[arg(short, long, help = "Bypass the confirmation prompt.")]
+        force: bool,
+    },
+
+    #[command(about = "Generates shell completion scripts.")]
+    Completions {
+        #[arg(value_enum, help = "The shell to generate completions for.")]
+        shell: Shell,
     },
 }
 
@@ -75,4 +85,12 @@ pub struct ConfigArgs {
         help = "The user email to configure."
     )]
     pub email: Option<String>,
+
+    #[arg(
+        short = 's',
+        long,
+        env = "GITUP_SIGNING_KEY",
+        help = "The GPG/SSH signing key to use. Use an empty string to unset."
+    )]
+    pub signing_key: Option<String>,
 }
